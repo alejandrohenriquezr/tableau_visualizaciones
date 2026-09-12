@@ -27,5 +27,7 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         GD_FOLDER_ID: ${{ secrets.GD_FOLDER_ID }}
+        # NUEVA LÍNEA: Forzar a Python a mirar la raíz del proyecto para las importaciones
+        PYTHONPATH: ${{ github.workspace }}
       run: |
         python main.py
