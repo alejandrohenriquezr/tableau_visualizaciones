@@ -1,0 +1,4 @@
+# Ignorar el archivo de credenciales local
+credentials.json
+__pycache__/
+.DS_Store
