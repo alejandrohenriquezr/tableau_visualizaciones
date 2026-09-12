@@ -2,31 +2,38 @@ name: Automatizacion Pipeline INE Chile
 
 on:
   schedule:
-    # Se ejecuta todos los lunes a las 05:00 UTC (01:00 o 02:00 AM hora de Chile)
-    - cron: "0 5 * * 1"
-  workflow_dispatch: # Permite ejecutar el script manualmente haciendo click en un botón
+    - cron: '0 5 * * 1'
+  workflow_dispatch: 
 
 jobs:
   run-etl:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Clonar Repositorio
-        uses: actions/checkout@v4
+    - name: Clonar Repositorio
+      uses: actions/checkout@v4
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        # Le decimos a GitHub dónde buscar las dependencias
+        cache-dependency-path: '**/requirements.txt' 
 
-      - name: Instalar Dependencias
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Instalar Dependencias
+      run: |
+        python -m pip install --upgrade pip
+        # Nos movemos a la carpeta del proyecto antes de instalar
+        cd tableau_ine
+        pip install -r requirements.txt
 
-      - name: Ejecutar ETL e Inyectar Datos
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          GD_FOLDER_ID: ${{ secrets.GD_FOLDER_ID }}
-        run: python main.py
+    - name: Ejecutar ETL e Inyectar Datos
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        GD_FOLDER_ID: ${{ secrets.GD_FOLDER_ID }}
+      # Nos movemos a la carpeta del proyecto antes de ejecutar
+      run: |
+        cd tableau_ine
+        python main.py
+
