@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from .base_extractor import BaseExtractor
+from extractors.base_extractor import BaseExtractor
 
 class IPCExtractor(BaseExtractor):
     def __init__(self):
