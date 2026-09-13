@@ -6,25 +6,31 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
-# Importar extractores activos
+# Importamos tu extractor oficial corregido
 from extractors.ipc_extractor import IPCExtractor
-# Cuando crees más, solo los importas aquí:
-# from extractors.ene_extractor import ENEExtractor 
 
 DRIVE_FOLDER_ID = os.environ.get("GD_FOLDER_ID")
 
 def upload_to_drive(df: pd.DataFrame, filename: str):
-    """Sube o reemplaza el archivo CSV en la carpeta de Google Drive."""
+    """Sube o reemplaza el archivo CSV en la carpeta compartida de Google Drive."""
+    print(f"☁️ Iniciando conexión con Google Drive para subir el archivo: {filename}...")
     scopes = ['https://googleapis.com']
     
+    if not os.environ.get("GOOGLE_CREDENTIALS"):
+        raise ValueError("❌ ERROR: La variable de entorno GOOGLE_CREDENTIALS está vacía.")
+    if not DRIVE_FOLDER_ID:
+        raise ValueError("❌ ERROR: La variable de entorno GD_FOLDER_ID (ID de la carpeta) no está configurada.")
+        
     creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     service = build('drive', 'v3', credentials=creds)
     
+    # Convertir DataFrame a buffer de memoria
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False, encoding='utf-8')
     csv_bytes = io.BytesIO(csv_buffer.getvalue().encode('utf-8'))
     
+    # Buscar si el archivo ya existe para sobreescribirlo y mantener el ID para Tableau
     query = f"name = '{filename}' and '{DRIVE_FOLDER_ID}' in parents and trashed = false"
     results = service.files().list(q=query, fields="files(id)").execute()
     files = results.get('files', [])
@@ -32,20 +38,39 @@ def upload_to_drive(df: pd.DataFrame, filename: str):
     media = MediaIoBaseUpload(csv_bytes, mimetype='text/csv', resumable=True)
     
     if files:
-        file_id = files[0]['id'] # Corrección: obtener el primer elemento de la lista
+        file_id = files[0]['id']
         service.files().update(fileId=file_id, media_body=media).execute()
-        print(f" Archivo {filename} actualizado exitosamente.")
+        print(f"🔄 ¡ÉXITO! El archivo {filename} ya existía y fue actualizado correctamente en Drive (ID: {file_id}).")
     else:
         file_metadata = {'name': filename, 'parents': [DRIVE_FOLDER_ID]}
         new_file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
         file_id = new_file.get('id')
-        print(f" Archivo {filename} creado exitosamente con ID: {file_id}")
+        print(f"🆕 ¡ÉXITO! Archivo nuevo {filename} creado correctamente en Google Drive (ID: {file_id}).")
         
-        # --- NUEVO BLOQUE: OTORGAR PERMISOS ---
-        # Esto hace que el archivo herede o permita que cualquier usuario con acceso a la carpeta lo lea
-        permission_metadata = {
-            'type': 'anyone',
-            'role': 'reader'
-        }
+        # Aplicar permisos globales de lectura para Tableau
+        permission_metadata = {'type': 'anyone', 'role': 'reader'}
         service.permissions().create(fileId=file_id, body=permission_metadata).execute()
-        print(f" Permisos de lectura globales aplicados al archivo.")
+        print("🔓 Permisos públicos de lectura concedidos al archivo de forma exitosa.")
+
+if __name__ == "__main__":
+    print("🚀 --- INICIANDO PIPELINE DE DATOS ---")
+    
+    # Declaramos explícitamente el trabajo del IPC
+    pipeline_jobs = [
+        {"extractor": IPCExtractor(), "filename": "ine_ipc_chile.csv"}
+    ]
+    
+    print(f"📋 Total de tareas encontradas en el plan: {len(pipeline_jobs)}")
+    
+    for job in pipeline_jobs:
+        try:
+            # 1. Ejecuta el extractor (Descarga y Transforma)
+            dataframe_listo = job["extractor"].run()
+            
+            # 2. Sube el resultado a Google Drive
+            upload_to_drive(dataframe_listo, job["filename"])
+            
+        except Exception as e:
+            print(f"💥 ERROR CRÍTICO procesando la tarea [{job['filename']}]: {str(e)}")
+            
+    print("🏁 --- PIPELINE FINALIZADO ---")
