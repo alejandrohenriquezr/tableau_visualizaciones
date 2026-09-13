@@ -1,80 +1,31 @@
 import os
-import json
-import io
 import pandas as pd
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-
-# Importamos tu extractor oficial corregido del IPC
 from extractors.ipc_extractor import IPCExtractor
 
-DRIVE_FOLDER_ID = os.environ.get("GD_FOLDER_ID")
-
-def upload_to_drive(df: pd.DataFrame, filename: str):
-    """Sube o reemplaza el archivo CSV en la carpeta de Google Drive omitiendo la cuota del bot."""
-    print(f"☁️ Iniciando conexión con Google Drive para subir el archivo: {filename}...")
+def save_locally(df: pd.DataFrame, filename: str):
+    """Guarda el archivo CSV directamente en el repositorio local para GitHub Pages."""
+    print(f"📦 Guardando archivo transformado en el entorno local: {filename}...")
     
-    scopes = ['https://googleapis.com']
+    # Creamos una carpeta pública si no existe
+    os.makedirs("public", exist_ok=True)
+    filepath = os.path.join("public", filename)
     
-    if not os.environ.get("GOOGLE_CREDENTIALS"):
-        raise ValueError("❌ ERROR: La variable de entorno GOOGLE_CREDENTIALS está vacía.")
-    if not DRIVE_FOLDER_ID:
-        raise ValueError("❌ ERROR: La variable de entorno GD_FOLDER_ID no está configurada.")
-        
-    creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
-    creds = service_account.Credentials.from_service_account_info(creds_dict).with_scopes(scopes)
-    service = build('drive', 'v3', credentials=creds)
-    
-    # Convertir el DataFrame (las 19,648 filas) a buffer de memoria en texto CSV
-    csv_buffer = io.StringIO()
-    df.to_csv(csv_buffer, index=False, encoding='utf-8')
-    csv_bytes = io.BytesIO(csv_buffer.getvalue().encode('utf-8'))
-    
-    # Añadimos supportsAllDrives=True para validar los permisos heredados de carpetas compartidas
-    query = f"name = '{filename}' and '{DRIVE_FOLDER_ID}' in parents and trashed = false"
-    results = service.files().list(q=query, fields="files(id)", supportsAllDrives=True).execute()
-    files = results.get('files', [])
-    
-    media = MediaIoBaseUpload(csv_bytes, mimetype='text/csv', resumable=True)
-    
-    if files:
-        file_id = files[0]['id']
-        service.files().update(fileId=file_id, media_body=media, supportsAllDrives=True).execute()
-        print(f"🔄 ¡ÉXITO! El archivo {filename} ya existía y fue actualizado en Drive (ID: {file_id}).")
-    else:
-        file_metadata = {'name': filename, 'parents': [DRIVE_FOLDER_ID]}
-        
-        # supportsAllDrives=True obliga a Google a usar la cuota de la carpeta compartida en lugar de la del bot
-        new_file = service.files().create(
-            body=file_metadata, 
-            media_body=media, 
-            fields='id',
-            supportsAllDrives=True
-        ).execute()
-        
-        file_id = new_file.get('id')
-        print(f"🆕 ¡ÉXITO! Archivo nuevo {filename} creado correctamente en Google Drive (ID: {file_id}).")
-        
-        # Le aplicamos permisos de lectura globales para asegurar que Tableau pueda consumirlo
-        permission_metadata = {'type': 'anyone', 'role': 'reader'}
-        service.permissions().create(fileId=file_id, body=permission_metadata, supportsAllDrives=True).execute()
-        print("🔓 Permisos públicos de lectura concedidos al archivo de forma exitosa.")
+    # Exportamos las 19,648 filas limpias
+    df.to_csv(filepath, index=False, encoding='utf-8')
+    print(f"✅ ¡ÉXITO! Archivo guardado correctamente en: {filepath}")
 
 if __name__ == "__main__":
-    print("🚀 --- INICIANDO PIPELINE DE DATOS ---")
+    print("🚀 --- INICIANDO PIPELINE DE DATOS NATIVO ---")
     
-    pipeline_jobs = [
-        {"extractor": IPCExtractor(), "filename": "ine_ipc_chile.csv"}
-    ]
-    
-    print(f"📋 Total de tareas encontradas en el plan: {len(pipeline_jobs)}")
-    
-    for job in pipeline_jobs:
-        try:
-            dataframe_listo = job["extractor"].run()
-            upload_to_drive(dataframe_listo, job["filename"])
-        except Exception as e:
-            print(f"💥 ERROR CRÍTICO procesando la tarea [{job['filename']}]: {str(e)}")
+    extractor = IPCExtractor()
+    try:
+        # Se ejecuta tu limpieza impecable del IPC del INE
+        dataframe_listo = extractor.run()
+        
+        # Guardado local rápido y sin APIs externas de Google
+        save_locally(dataframe_listo, "ine_ipc_chile.csv")
+        
+    except Exception as e:
+        print(f"💥 ERROR CRÍTICO en el pipeline: {str(e)}")
             
     print("🏁 --- PIPELINE FINALIZADO ---")
