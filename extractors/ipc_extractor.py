@@ -8,7 +8,7 @@ class IPCExtractor(BaseExtractor):
 
   def __init__(self):
     super().__init__(name="IPC_Chile_Oficial")
-    self.url = "https://ine.gob.cl"
+    self.url = "https://www.ine.gob.cl/docs/default-source/%C3%ADndice-de-precios-al-consumidor/cuadros-estadisticos/base-anual-2023_100/series-de-tiempo/ipc-xls.xlsx"
 
   def fetch_raw_data(self) -> dict:
     print(f"📡 Intentando conectar con el servidor del INE Chile...")
