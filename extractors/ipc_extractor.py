@@ -43,6 +43,6 @@ class IPCExtractor(BaseExtractor):
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     print("🔢 Conversión de tipos completada: Todas las series numéricas han sido estandarizadas.")
-     print(f"📋 Estructura final del DataFrame lista para exportar. Total filas finales: {len(df)}")
+    print(f"📋 Estructura final del DataFrame lista para exportar. Total filas finales: {len(df)}")
             
     return df
