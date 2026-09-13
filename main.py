@@ -2,30 +2,29 @@ import os
 import pandas as pd
 from extractors.ipc_extractor import IPCExtractor
 
-def save_locally(df: pd.DataFrame, filename: str):
-    """Guarda el archivo CSV directamente en el repositorio local para GitHub Pages."""
-    print(f"📦 Guardando archivo transformado en el entorno local: {filename}...")
+def save_to_project_folder(df: pd.DataFrame, filename: str):
+    """Guarda el archivo CSV procesado directamente en la raíz de tu proyecto local."""
+    print(f"📦 Guardando archivo transformado: {filename}...")
     
-    # Creamos una carpeta pública si no existe
-    os.makedirs("public", exist_ok=True)
-    filepath = os.path.join("public", filename)
-    
-    # Exportamos las 19,648 filas limpias
+    # Guarda el archivo directamente en la carpeta donde estás ejecutando el script
+    filepath = os.path.join(os.getcwd(), filename)
     df.to_csv(filepath, index=False, encoding='utf-8')
-    print(f"✅ ¡ÉXITO! Archivo guardado correctamente en: {filepath}")
+    
+    print(f"✅ ¡ÉXITO TOTAL! Archivo guardado físicamente en: {filepath}")
 
 if __name__ == "__main__":
-    print("🚀 --- INICIANDO PIPELINE DE DATOS NATIVO ---")
+    print("🚀 --- INICIANDO PIPELINE DE DATOS LOCAL ---")
     
     extractor = IPCExtractor()
     try:
-        # Se ejecuta tu limpieza impecable del IPC del INE
+        # Ejecuta la extracción de las 19,648 filas del INE
         dataframe_listo = extractor.run()
         
-        # Guardado local rápido y sin APIs externas de Google
-        save_locally(dataframe_listo, "ine_ipc_chile.csv")
+        # Guarda el archivo localmente de forma instantánea
+        save_to_project_folder(dataframe_listo, "ine_ipc_chile.csv")
         
     except Exception as e:
         print(f"💥 ERROR CRÍTICO en el pipeline: {str(e)}")
             
     print("🏁 --- PIPELINE FINALIZADO ---")
+
