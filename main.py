@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from extractors.ipc_extractor import IPCExtractor
+from extractors.ene_extractor import ENEExtractor
 
 def save_to_project_folder(df: pd.DataFrame, filename: str):
     """Guarda el archivo CSV procesado directamente en la raíz de tu proyecto local."""
@@ -15,16 +16,23 @@ def save_to_project_folder(df: pd.DataFrame, filename: str):
 if __name__ == "__main__":
     print("🚀 --- INICIANDO PIPELINE DE DATOS LOCAL ---")
     
-    extractor = IPCExtractor()
+    # --- 1. Extractor de IPC ---
+    ipc_extractor = IPCExtractor()
     try:
-        # Ejecuta la extracción de las 19,648 filas del INE
-        dataframe_listo = extractor.run()
-        
-        # Guarda el archivo localmente de forma instantánea
-        save_to_project_folder(dataframe_listo, "ine_ipc_chile.csv")
-        
+        df_ipc = ipc_extractor.run()
+        save_to_project_folder(df_ipc, "ine_ipc_chile.csv")
     except Exception as e:
-        print(f"💥 ERROR CRÍTICO en el pipeline: {str(e)}")
+        print(f"💥 ERROR CRÍTICO en IPC: {str(e)}")
+
+    print("\n----------------------------------------\n")
+    
+    # --- 2. Extractor de ENE ---
+    ene_extractor = ENEExtractor()
+    try:
+        df_ene = ene_extractor.run()
+        save_to_project_folder(df_ene, "ine_ene_chile.csv")
+    except Exception as e:
+        print(f"💥 ERROR CRÍTICO en ENE: {str(e)}")
             
     print("🏁 --- PIPELINE FINALIZADO ---")
 
