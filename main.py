@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from extractors.ipc_extractor import IPCExtractor
 from extractors.ene_extractor import ENEExtractor
+from extractors.ir_extractor import IRExtractor
 
 def save_to_project_folder(df: pd.DataFrame, filename: str):
     """Guarda el archivo CSV procesado directamente en la raíz de tu proyecto local."""
@@ -33,6 +34,16 @@ if __name__ == "__main__":
         save_to_project_folder(df_ene, "ine_ene_chile.csv")
     except Exception as e:
         print(f"💥 ERROR CRÍTICO en ENE: {str(e)}")
+
+    print("\n----------------------------------------\n")
+    
+    # --- 3. Extractor de IR ---
+    ir_extractor = IRExtractor()
+    try:
+        df_ir = ir_extractor.run()
+        save_to_project_folder(df_ir, "ine_ir_chile.csv")
+    except Exception as e:
+        print(f"💥 ERROR CRÍTICO en IR: {str(e)}")
             
     print("🏁 --- PIPELINE FINALIZADO ---")
 
