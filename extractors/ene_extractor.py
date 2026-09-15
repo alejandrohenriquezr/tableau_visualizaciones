@@ -25,7 +25,8 @@ class ENEExtractor(BaseExtractor):
         # y la fila 7 (índice 6 original) tendrá "nota" / "en miles" / "tasa (%)".
         # Usamos header=[0, 1] para capturar ambas filas como MultiIndex.
         df = pd.read_excel(excel_file, sheet_name="AS", skiprows=5, header=[0, 1])
-        
+
+       
         print(f"📊 Excel cargado en memoria.")
         
         # Crear los nuevos nombres de columnas
@@ -71,44 +72,59 @@ class ENEExtractor(BaseExtractor):
             
         df.columns = new_columns
         
-        # Asegurar que Año sea numérico, convirtiendo notas al final en NaN
-        df["Año"] = pd.to_numeric(df["Año"], errors='coerce')
-        
         # Remover cualquier fila donde Año o Trimestre sean nulos
-        df = df.dropna(subset=['Año', 'Trimestre'])
+        #df = df.dropna(subset=['Año', 'Trimestre'])
         
         # Convertir de vuelta a entero para evitar el formato 2010.0
-        df["Año"] = df["Año"].astype(int)
+        #df["Año"] = df["Año"].astype(int)
         
         # Mapeo del mes central del trimestre
         mes_central_map = {
-            "Ene - Mar": "Feb",
-            "Feb - Abr": "Mar",
-            "Mar - May": "Abr",
-            "Abr - Jun": "May",
-            "May - Jul": "Jun",
-            "Jun - Ago": "Jul",
-            "Jul - Sep": "Ago",
-            "Ago - Oct": "Sep",
-            "Sep - Nov": "Oct",
-            "Oct - Dic": "Nov",
-            "Nov - Ene": "Dic",
-            "Dic - Feb": "Ene"
+            "Ene - Mar": "Febrero",
+            "Feb - Abr": "Marzo",
+            "Mar - May": "Abril",
+            "Abr - Jun": "Mayo",
+            "May - Jul": "Junio",
+            "Jun - Ago": "Julio",
+            "Jul - Sep": "Agosto",
+            "Ago - Oct": "Septiembre",
+            "Sep - Nov": "Octubre",
+            "Oct - Dic": "Noviembre",
+            "Nov - Ene": "Diciciembre",
+            "Dic - Feb": "Enero"
         }
         
         # Crear Trim_año y mes_año
         # Primero aseguramos que Año se formatee sin decimales si viene como float
+        # 1. Convertir a número forzando a NaN los textos (como "Notas", "Fuente", etc.)
+        # Ya que el archivo contiene texto al final de la columna A
+        print("⚙️ Pasando año a numérico")
+        df['Año'] = pd.to_numeric(df['Año'], errors='coerce')
+
+        print("⚙️ Eliminando filas NaN")
+        # 2. Eliminar todas las filas que quedaron como NaN en la columna Año
+        df = df.dropna(subset=['Año'])
+
+        print("⚙️ Convirtiendo Año a número")
+        # 3. Convertir a entero limpio (opcional, evita que guarde como 2024.0)
+        df['Año'] = df['Año'].astype(int)
         año_str = df["Año"].fillna(0).astype(int).astype(str)
+
         # Limpiamos Trimestre de espacios extra en los bordes
         trimestre_str = df["Trimestre"].astype(str).str.strip()
         
         trim_año = año_str + "_" + trimestre_str
-        mes_central = trimestre_str.map(mes_central_map)
-        mes_año = mes_central + "_" + año_str
+        mes_central = trimestre_str.map(mes_central_map).str.lower()
+        #df['Mes_Clean'] = df['Mes'].astype(str).str.strip().str.lower()
+        mes_año = "01/" + mes_central + "/" + año_str
         
         # Insertamos después de Trimestre (índice 1)
-        df.insert(2, "Trim_año", trim_año)
-        df.insert(3, "mes_año", mes_año)
+        mes_index = df.columns.get_loc('Trimestre')
+        df.insert(mes_index + 1, "Trim_año", trim_año)
+        df.insert(mes_index + 2, "mes_año", mes_año)
+        #df['mes_año'] = pd.to_datetime(df['mes_año'], format='%d/%mmmm/%Y')
+
+
         
         print(f"📋 Estructura final del DataFrame lista para exportar. Total filas finales: {len(df)}")
         return df

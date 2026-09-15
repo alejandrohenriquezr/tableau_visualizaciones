@@ -53,6 +53,11 @@ class IRExtractor(BaseExtractor):
         # Encontrar el índice de la columna 'mes' e insertar 'nombre_mes' justo después
         mes_index = df.columns.get_loc('mes')
         df.insert(mes_index + 1, 'nombre_mes', nombre_mes)
+
+        año_str = df["año"].fillna(0).astype(int).astype(str)
+        mes_año = nombre_mes + " " + año_str
+        df.insert(mes_index + 2, 'mes_año', mes_año) 
+
         
         print(f"📋 Estructura final del DataFrame lista para exportar. Total filas finales: {len(df)}")
         return df

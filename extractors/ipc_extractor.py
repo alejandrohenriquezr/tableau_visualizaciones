@@ -32,14 +32,40 @@ class IPCExtractor(BaseExtractor):
     # Renombramos la segunda columna a 'Mes' para trabajarla con seguridad
     df.rename(columns={df.columns[1]: "Mes"}, inplace=True)
 
+    # Mapeo de meses
+    meses_map = {
+        1: "Enero",
+        2: "Febrero",
+        3: "Marzo",
+        4: "Abril",
+        5: "Mayo",
+        6: "Junio",
+        7: "Julio",
+        8: "Agosto",
+        9: "Septiembre",
+        10: "Octubre",
+        11: "Noviembre",
+        12: "Diciembre"
+    }
     # 2. Agregar la columna 'nombre_mes' con el texto original del mes
-    df["nombre_mes"] = df["Mes"].astype(str).str.strip()
+    df['Mes'] = pd.to_numeric(df['Mes'], errors='coerce')
+    
+    # Crear la columna nombre_mes
+    nombre_mes = df['Mes'].map(meses_map)
+    año_str = df["Año"].fillna(0).astype(int).astype(str)
     print("✏️ Columna 'nombre_mes' agregada con éxito a partir de la columna 'Mes'.")
+
+    mes_año = nombre_mes + " " + año_str
+    mes_index = df.columns.get_loc('Mes')
+    df.insert(mes_index + 1, 'nombre_mes', nombre_mes)   
+    df.insert(mes_index + 2, 'mes_año', mes_año)  
+    
+
 
     # 3. Conversión de tipos de datos:
     # Asegurar que todas las columnas excepto 'Glosa' (y 'nombre_mes') sean numéricas
     for col in df.columns:
-      if col not in ["Glosa", "nombre_mes"]:
+      if col not in ["Glosa", "nombre_mes", "mes_año"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     print("🔢 Conversión de tipos completada: Todas las series numéricas han sido estandarizadas.")

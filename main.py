@@ -47,3 +47,4 @@ if __name__ == "__main__":
             
     print("🏁 --- PIPELINE FINALIZADO ---")
 
+source("grafico_phillips.py")
